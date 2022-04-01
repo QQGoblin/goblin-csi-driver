@@ -1,0 +1,4 @@
+FROM alpine:3.15.3
+
+COPY ./output/hostpath-csi-driver /hostpath-csi-driver
+ENTRYPOINT ["/hostpath-csi-driver"]

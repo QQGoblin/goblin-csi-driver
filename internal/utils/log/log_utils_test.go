@@ -19,6 +19,7 @@ package log
 import (
 	"errors"
 	"fmt"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -44,4 +45,17 @@ func TestGzipLogFile(t *testing.T) {
 	}
 
 	os.Remove(newExt)
+}
+
+func TestMarshalObject(t *testing.T) {
+
+	c := &csi.CreateVolumeRequest{
+		Name: "xxxxx",
+		VolumeContentSource: &csi.VolumeContentSource{
+			Type: &csi.VolumeContentSource_Snapshot{},
+		},
+	}
+
+	DebugObjMessage(c)
+
 }

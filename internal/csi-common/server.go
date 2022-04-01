@@ -1,7 +1,7 @@
 package csi_common
 
 import (
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 	"google.golang.org/grpc"
 	"net"
 	"os"

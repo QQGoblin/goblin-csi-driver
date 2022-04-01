@@ -15,7 +15,9 @@ package log
 
 import (
 	"compress/gzip"
+	"gopkg.in/yaml.v2"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -48,4 +50,18 @@ func GzipLogFile(pathToFile string) error {
 	}
 
 	return os.Remove(pathToFile)
+}
+
+func DebugObjMessage(obj interface{}) error {
+
+	objStr, err := yaml.Marshal(obj)
+
+	if err != nil {
+		return err
+	}
+
+	objType := reflect.TypeOf(obj).String()
+	println("========================== Debug Message: " + objType + "==========================")
+	println(string(objStr))
+	return nil
 }

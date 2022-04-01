@@ -3,27 +3,28 @@ package csi_common
 import (
 	"fmt"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 )
 
-// CSIDriver stores driver information.
+// CSIDriver stores hostpath information.
 type CSIDriver struct {
 	name    string
 	nodeID  string
 	version string
 	// topology constraints that this nodeserver will advertise
-	topology     map[string]string
-	capabilities []*csi.ControllerServiceCapability
-	vc           []*csi.VolumeCapability_AccessMode
+	topology               map[string]string
+	controllerCapabilities []*csi.ControllerServiceCapability
+	nodeCapabilities       []*csi.NodeServiceCapability
+	vc                     []*csi.VolumeCapability_AccessMode
 }
 
 // NewCSIDriver Creates a NewCSIDriver object. Assumes vendor
-// version is equal to driver version &  does not support optional
-// driver plugin info manifest field. Refer to CSI spec for more details.
-func NewCSIDriver(name, v, nodeID string) *CSIDriver {
+// version is equal to hostpath version &  does not support optional
+// hostpath plugin info manifest field. Refer to CSI spec for more details.
+func NewCSIDriver(name, v, nodeID string, topology map[string]string) *CSIDriver {
 	if name == "" {
 		klog.Errorf("Driver name missing")
 
@@ -43,22 +44,23 @@ func NewCSIDriver(name, v, nodeID string) *CSIDriver {
 	}
 
 	driver := CSIDriver{
-		name:    name,
-		version: v,
-		nodeID:  nodeID,
+		name:     name,
+		version:  v,
+		nodeID:   nodeID,
+		topology: topology,
 	}
 
 	return &driver
 }
 
 // ValidateControllerServiceRequest validates the controller
-// plugin capabilities.
+// plugin controllerCapabilities.
 func (d *CSIDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}
 
-	for _, capability := range d.capabilities {
+	for _, capability := range d.controllerCapabilities {
 		if c == capability.GetRpc().GetType() {
 			return nil
 		}
@@ -67,8 +69,8 @@ func (d *CSIDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapa
 	return status.Error(codes.InvalidArgument, fmt.Sprintf("%s", c)) //nolint
 }
 
-// AddControllerServiceCapabilities stores the controller capabilities
-// in driver object.
+// AddControllerServiceCapabilities stores the controller controllerCapabilities
+// in hostpath object.
 func (d *CSIDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) {
 	csc := make([]*csi.ControllerServiceCapability, 0, len(cl))
 
@@ -77,7 +79,18 @@ func (d *CSIDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceC
 		csc = append(csc, NewControllerServiceCapability(c))
 	}
 
-	d.capabilities = csc
+	d.controllerCapabilities = csc
+}
+
+func (d *CSIDriver) AddNodeServiceCapabilities(cl []csi.NodeServiceCapability_RPC_Type) {
+	csc := make([]*csi.NodeServiceCapability, 0, len(cl))
+
+	for _, c := range cl {
+		log.DefaultLog("Enabling controller service capability: %v", c.String())
+		csc = append(csc, NewNodeServiceCapability(c))
+	}
+
+	d.nodeCapabilities = csc
 }
 
 // AddVolumeCapabilityAccessModes stores volume access modes.

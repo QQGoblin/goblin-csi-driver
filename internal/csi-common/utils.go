@@ -6,7 +6,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -115,12 +115,22 @@ func NewMiddlewareServerOption() grpc.ServerOption {
 	return grpc_middleware.WithUnaryServerChain(middleWare...)
 }
 
-// NewControllerServiceCapability returns controller capabilities.
+// NewControllerServiceCapability returns controller controllerCapabilities.
 func NewControllerServiceCapability(ctrlCap csi.ControllerServiceCapability_RPC_Type) *csi.ControllerServiceCapability {
 	return &csi.ControllerServiceCapability{
 		Type: &csi.ControllerServiceCapability_Rpc{
 			Rpc: &csi.ControllerServiceCapability_RPC{
 				Type: ctrlCap,
+			},
+		},
+	}
+}
+
+func NewNodeServiceCapability(nodeCap csi.NodeServiceCapability_RPC_Type) *csi.NodeServiceCapability {
+	return &csi.NodeServiceCapability{
+		Type: &csi.NodeServiceCapability_Rpc{
+			Rpc: &csi.NodeServiceCapability_RPC{
+				Type: nodeCap,
 			},
 		},
 	}

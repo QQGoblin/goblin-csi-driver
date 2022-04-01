@@ -3,12 +3,12 @@ package csi_common
 import (
 	"context"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// DefaultIdentityServer stores driver object.
+// DefaultIdentityServer stores hostpath object.
 type DefaultIdentityServer struct {
 	Driver *CSIDriver
 }
@@ -36,9 +36,9 @@ func (ids *DefaultIdentityServer) Probe(ctx context.Context, req *csi.ProbeReque
 	return &csi.ProbeResponse{}, nil
 }
 
-// GetPluginCapabilities returns plugin capabilities.
+// GetPluginCapabilities returns plugin controllerCapabilities.
 func (ids *DefaultIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
-	log.TraceLog(ctx, "Using default capabilities")
+	log.TraceLog(ctx, "Using default controllerCapabilities")
 
 	return &csi.GetPluginCapabilitiesResponse{
 		Capabilities: []*csi.PluginCapability{
@@ -49,6 +49,17 @@ func (ids *DefaultIdentityServer) GetPluginCapabilities(ctx context.Context, req
 					},
 				},
 			},
+			{
+				Type: &csi.PluginCapability_Service_{
+					Service: &csi.PluginCapability_Service{
+						Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS,
+					},
+				},
+			},
 		},
 	}, nil
+}
+
+func NewDefaultIdentityServer(d *CSIDriver) *DefaultIdentityServer {
+	return &DefaultIdentityServer{Driver: d}
 }

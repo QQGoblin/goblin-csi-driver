@@ -1,0 +1,100 @@
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: hostpath-csi-driver
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: hostpath-csi-driver
+  template:
+    metadata:
+      labels:
+        app: hostpath-csi-driver
+    spec:
+      serviceAccount: goblin-csi-driver
+      hostNetwork: true
+      hostPID: true
+      # to use e.g. Rook orchestrated cluster, and mons' FQDN is
+      # resolved through k8s service, set dns policy to cluster first
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: csi-provisioner
+#          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.0.4
+          args:
+            - "-v=1"
+            - "--csi-address=/csi/csi.sock"
+            - "--leader-election=true"
+            - "--feature-gates=Topology=true"
+#            - "--node-deployment=true"
+            - "--strict-topology=true"
+#            - "--immediate-topology=false"
+            - "--extra-create-metadata=true"
+            - "--worker-threads=5"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+        - name: node-driver-registrar
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.0.1
+#          image：k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.5.0
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/hostpath.csi.goblin.io/csi.sock"
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            # 用于和 CSI Driver 交互
+            - name: socket-dir
+              mountPath: /csi
+            # 注册 CSI driver 的 socket，用于和 Kubelet 交互
+            - name: registration-dir
+              mountPath: /registration
+        - name: hostpath
+          image: goblin-hostpathplugin:canary
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--nodeid=$(NODE_ID)"
+            - "--endpoint=unix:///csi/csi.sock"
+            - "--drivername=hostpath.csi.goblin.io"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: state
+              mountPath: /var/lib/goblin/hostpath
+              mountPropagation: "Bidirectional"
+            - name: mountpoint-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: "Bidirectional"
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/hostpath.csi.goblin.io
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: mountpoint-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: DirectoryOrCreate
+        - name: state
+          hostPath:
+            path: /var/lib/goblin/hostpath
+            type: DirectoryOrCreate

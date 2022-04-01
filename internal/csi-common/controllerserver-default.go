@@ -3,14 +3,38 @@ package csi_common
 import (
 	"context"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// DefaultControllerServer points to default driver.
+// DefaultControllerServer points to default hostpath.
 type DefaultControllerServer struct {
 	Driver *CSIDriver
+}
+
+func (cs *DefaultControllerServer) CreateVolume(ctx context.Context, request *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) DeleteVolume(ctx context.Context, request *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) ValidateVolumeCapabilities(ctx context.Context, request *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) CreateSnapshot(ctx context.Context, request *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) DeleteSnapshot(ctx context.Context, request *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) ControllerExpandVolume(ctx context.Context, request *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
 }
 
 // ControllerPublishVolume publish volume on node.
@@ -34,7 +58,7 @@ func (cs *DefaultControllerServer) GetCapacity(ctx context.Context, req *csi.Get
 }
 
 // ControllerGetCapabilities implements the default GRPC callout.
-// Default supports all capabilities.
+// Default supports all controllerCapabilities.
 func (cs *DefaultControllerServer) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	log.TraceLog(ctx, "Using default ControllerGetCapabilities")
 	if cs.Driver == nil {
@@ -42,7 +66,7 @@ func (cs *DefaultControllerServer) ControllerGetCapabilities(ctx context.Context
 	}
 
 	return &csi.ControllerGetCapabilitiesResponse{
-		Capabilities: cs.Driver.capabilities,
+		Capabilities: cs.Driver.controllerCapabilities,
 	}, nil
 }
 
@@ -54,4 +78,8 @@ func (cs *DefaultControllerServer) ListSnapshots(ctx context.Context, req *csi.L
 // ControllerGetVolume fetch volume information.
 func (cs *DefaultControllerServer) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func NewDefaultControllerServer(d *CSIDriver) *DefaultControllerServer {
+	return &DefaultControllerServer{Driver: d}
 }

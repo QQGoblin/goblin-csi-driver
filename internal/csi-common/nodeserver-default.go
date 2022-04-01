@@ -2,17 +2,16 @@ package csi_common
 
 import (
 	"context"
-	"goblin-csi-driver/internal/util/log"
+	"goblin-csi-driver/internal/utils/log"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// DefaultNodeServer stores driver object.
+// DefaultNodeServer stores hostpath object.
 type DefaultNodeServer struct {
 	Driver *CSIDriver
-	Type   string
 }
 
 // NodeExpandVolume returns unimplemented response.
@@ -37,21 +36,35 @@ func (ns *DefaultNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetIn
 // NodeGetCapabilities returns RPC unknown capability.
 func (ns *DefaultNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	log.TraceLog(ctx, "Using default NodeGetCapabilities")
-
+	if ns.Driver == nil {
+		return nil, status.Error(codes.Unimplemented, "Controller server is not enabled")
+	}
 	return &csi.NodeGetCapabilitiesResponse{
-		Capabilities: []*csi.NodeServiceCapability{
-			{
-				Type: &csi.NodeServiceCapability_Rpc{
-					Rpc: &csi.NodeServiceCapability_RPC{
-						Type: csi.NodeServiceCapability_RPC_UNKNOWN,
-					},
-				},
-			},
-		},
+		Capabilities: ns.Driver.nodeCapabilities,
 	}, nil
 }
 
-// ConstructMountOptions returns only unique mount options in slice.
+func (n *DefaultNodeServer) NodeStageVolume(ctx context.Context, request *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (n *DefaultNodeServer) NodeUnstageVolume(ctx context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (n *DefaultNodeServer) NodePublishVolume(ctx context.Context, request *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (n *DefaultNodeServer) NodeUnpublishVolume(ctx context.Context, request *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (n *DefaultNodeServer) NodeGetVolumeStats(ctx context.Context, request *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+// ConstructMountOptions returns only unique mount config in slice.
 func ConstructMountOptions(mountOptions []string, volCap *csi.VolumeCapability) []string {
 	if m := volCap.GetMount(); m != nil {
 		hasOption := func(options []string, opt string) bool {
@@ -82,4 +95,8 @@ func MountOptionContains(mountOptions []string, opt string) bool {
 	}
 
 	return false
+}
+
+func NewDefaultNodeServer(d *CSIDriver) *DefaultNodeServer {
+	return &DefaultNodeServer{Driver: d}
 }

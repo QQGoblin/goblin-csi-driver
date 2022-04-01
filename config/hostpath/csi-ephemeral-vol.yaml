@@ -1,0 +1,22 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: my-csi-app
+spec:
+  containers:
+    - name: my-frontend
+      image: registry.lqingcloud.cn/library/alpine:3.15.3
+      volumeMounts:
+        - mountPath: "/data"
+          name: my-csi-volume
+      command: [ "sleep", "inf","WaitForFirstConsumer" ]
+  nodeSelector:
+    kubernetes.io/hostname: node1
+  volumes:
+    - name: my-csi-volume
+      csi:
+        driver: hostpath.csi.goblin.io
+        fsType: "xfs"
+        volumeAttributes:
+          size: "2Gi"
+          otherAttributes: "somethings"
